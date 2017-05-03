@@ -26,7 +26,7 @@ red = "{{selected}}"
 blue = 'R1a'
 
 map <- leaflet() %>% 
-  # addTiles(urlTemplate = 'http://localhost:8000/tiles8/{z}/{x}/{y}.png',options = tileOptions(minZoom = 2, maxZoom = 8, tms = TRUE)) %>%
+  addProviderTiles("CartoDB.Positron") %>% 
   setView(lng = 10, lat = 48, zoom = 5) %>%
   leaflet.extras::addGeoJSONChoropleth(DNAKarte_adm2_K2.topojson,
                                        valueProperty = valuePropertyCode(red,blue),
