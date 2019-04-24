@@ -14,14 +14,6 @@ valuePropertyCode <- function(x, y){
   return(JS(code))
 }
 
-labelPropertyCode <- function(x, y){
-  x = paste0('feature.properties.',x)
-  y = paste0('feature.properties.',y)
-  code = paste0("function(feature) {val = Math.log10(",x," / ",y,"); return 'Value:' + ((val > -1.3 || val== Number.POSITIVE_INFINITY) ? ((val < 1.3) ? val : 1.3) : -1.3);}") # limitiere val auf -1.3 .. 1.3; siehe: http://www.hnldesign.nl/work/code/javascript-limit-integer-min-max/
-  # code = paste0("function(feature) {return 'Opacity: ' + (Math.min(Math.max(",x,",",y,"),40)*Math.min(feature.properties.Total,20)/20/40);}") # limitiere val auf -1.3 .. 1.3; siehe: http://www.hnldesign.nl/work/code/javascript-limit-integer-min-max/
-  return(JS(code))
-}
-
 red = "{{selected}}"
 blue = 'R1a'
 
@@ -29,7 +21,9 @@ map <- leaflet() %>%
   addProviderTiles("CartoDB.Positron") %>% 
   setView(lng = 10, lat = 48, zoom = 5) %>%
   leaflet.extras::addGeoJSONChoropleth(DNAKarte_adm2_K2.topojson,
-                                       valueProperty = valuePropertyCode(red,blue),
+                                       valueProperty = JS(paste0("function(feature) {return feature.properties.{{selected}}}")),
+                                       # valueProperty = "{{selectedHaplogroupNormalizied}}",
+                                       # valueProperty = valuePropertyCode(red,blue),
                                        scale = c('blue','white','red'), 
                                        mode='k',    # q for quantile, e for equidistant, k for k-means
                                        steps = 10,
@@ -57,29 +51,34 @@ ui <- tagList(tags$div("Modern human DNA Y-Haplogroup"),
 tags$script(
   "
   var app = new Vue({
-  el: '#app',
-  data: {
-  selected: 'R1b'
-  },
-  watch: {
-  selected: function() {
-  // uncomment debugger below if you want to step through debugger;
-  
-  // only expect one; if we expect multiple leaflet then we will need to be more specific
-  var instance = HTMLWidgets.find('.leaflet');
-  // get the map; could easily combine with above
-  var map = instance.getMap();
-  // we set group name to choro above, so that we can easily clear
-  map.layerManager.clearGroup('choro');
-  
-  // now we will use the prior method to redraw
-  var el = document.querySelector('.leaflet');
-  // get the original method
-  var addgeo = JSON.parse(document.querySelector(\"script[data-for='\" + el.id + \"']\").innerText).x.calls[1];
-  addgeo.args[7].valueProperty = this.selected;
-  LeafletWidget.methods.addGeoJSONChoropleth.apply(map,addgeo.args);
-  }
-  }
+    el: '#app',
+    data: {
+      selected: 'R1b'
+    },
+    watch: {
+      selected: function() {
+        // uncomment debugger below if you want to step through debugger;
+        
+        // only expect one; if we expect multiple leaflet then we will need to be more specific
+        var instance = HTMLWidgets.find('.leaflet');
+        // get the map; could easily combine with above
+        var map = instance.getMap();
+        // we set group name to choro above, so that we can easily clear
+        map.layerManager.clearGroup('choro');
+        
+        // now we will use the prior method to redraw
+        var el = document.querySelector('.leaflet');
+        // get the original method
+        var addgeo = JSON.parse(document.querySelector(\"script[data-for='\" + el.id + \"']\").innerText).x.calls[1];
+        addgeo.args[7].valueProperty = this.selected;
+        LeafletWidget.methods.addGeoJSONChoropleth.apply(map,addgeo.args);
+      }
+    },
+    computed: {
+      selectedHaplogroupNormalizied() {
+        return this.selected;
+      }
+    }
   });
   "
   ),
